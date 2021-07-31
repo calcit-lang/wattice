@@ -1,30 +1,12 @@
 
-Respo workflow in Calcit-js
+Wattice
 ----
 
-> Respo web page based on [calcit-js](https://github.com/calcit-lang/calcit_runner.rs).
-
-Demo http://repo.calcit-lang.org/respo-calcit-workflow/ .
+> A prototype using Calcit-js and React.js .
 
 ### Usages
 
-To develop:
-
-```bash
-calcit_runner --emit-js # watching
-
-yarn # to install vite
-yarn vite # watching and running on localhost:3000
-```
-
-calcit-js is using [Calcit Editor](https://github.com/calcit-lang/editor).
-
-To build:
-
-```bash
-yarn vite build
-http-server dist/
-```
+_TODO_
 
 ### Workflow
 
