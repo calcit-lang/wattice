@@ -11,6 +11,7 @@
           reacher.app.config :refer $ dev?
           reacher.core :refer $ defcomp div =< textarea span input button use-atom use-dispatch use-effect! re-memo wrap-comp
           "\"react" :as React
+          app.interpret :refer $ interpret
       :defs $ {}
         |comp-container $ quote
           defn comp-container (props ? children)
@@ -18,7 +19,24 @@
                 store $ .-store props
               div
                 {} $ :style (merge ui/global ui/row)
-                , "\"TODO"
+                wrap-comp comp-window $ &js-object
+        |comp-window $ quote
+          defn comp-window (props & children)
+            let
+                *code $ use-atom nil
+              use-effect! ([])
+                fn () (hint-fn async)
+                  let
+                      req $ js-await (js/fetch "\"./demos/home.cirru")
+                      code $ js-await (.!text req)
+                      result $ apply-args
+                        nil (parse-cirru code) ({})
+                        fn (ret xs scope)
+                          if (empty? xs) ret $ let
+                              p $ interpret (first xs) ({})
+                            recur (nth p 0) (rest xs) (nth p 1)
+                    js/console.log result
+              div ({}) "\"Window" $ str "\"Code:" (.get *code)
     |app.schema $ {}
       :ns $ quote (ns app.schema)
       :defs $ {}
@@ -34,6 +52,13 @@
             case-default op
               do (println "\"unknown op:" op) store
               :hydrate-storage data
+    |app.interpret $ {}
+      :ns $ quote (ns app.interpret)
+      :defs $ {}
+        |interpret $ quote
+          defn interpret (code scope)
+            println "\"TODO interpreting" $ format-to-lisp code
+            [] code scope
     |app.main $ {}
       :ns $ quote
         ns app.main $ :require

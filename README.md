@@ -2,7 +2,12 @@
 Wattice
 ----
 
-> A prototype using Calcit-js and React.js .
+> A prototype using React.js and Calcit-js .
+
+Containing:
+
+- component structure based on React.js ,
+- interpreter based on Calcit-js .
 
 ### Usages
 
