@@ -19,7 +19,8 @@
                 store $ .-store props
               div
                 {} $ :style (merge ui/global ui/row)
-                wrap-comp comp-window $ &js-object "\"url" "\"./demos/home.cirru"
+                wrap-comp comp-window $ js-object ("\"url" "\"./demos/home.cirru")
+                  "\"onEvent" $ fn (kind obj) (js/console.log "\"ontainer event" kind obj)
         |root-scope $ quote
           def root-scope $ {}
             "\"println" $ fn (& args)
@@ -38,22 +39,31 @@
             "\"map" map
             "\"filter" filter
             "\"&str:replace" &str:replace
+            "\"count" count
+            "\"&+" $ fn (x y) (+ x y)
+            "\"&-" $ fn (x y) (- x y)
             "\"[]" []
             "\"&{}" &{}
             "\"and" $ fn (& args)
-              if (empty? args) true $ if (first args)
-                recur $ rest args
-                , false
-            "\"true" $ fn (& args)
-              if (empty? args) false $ if (first args) (first args)
-                recur $ rest args
-            "\"window" $ fn (props) (js/console.log "\"interpreting window props" props)
+              if (empty? args) true $ if
+                = 1 $ count args
+                first args
+                if (first args)
+                  recur & $ rest args
+                  , false
+            "\"or" $ fn (& args)
+              if (empty? args) false $ if
+                = 1 $ count args
+                first args
+                if (first args) (first args)
+                  recur & $ rest args
+            "\"window" $ fn (props)
               wrap-comp comp-window $ js-object
                 "\"url" $ :url props
                 "\"style" $ :style props
-                "\"on-event" $ :on-event props
+                "\"onEvent" $ :on-event props
         |comp-window $ quote
-          defn comp-window (props & children) (js/console.info "\"check window props" props)
+          defn comp-window (props ? children)
             let
                 *code $ use-atom nil
                 *state $ use-atom nil
@@ -61,12 +71,12 @@
                   {}
                     "\"state" $ .get *state
                     "\"set-state!" $ fn (s) (.set! *state s)
-                    "\"call-parent!" $ .-on-event props
+                    "\"call-parent!" $ .-onEvent props
               use-effect! ([])
                 fn () (hint-fn async)
                   let
                       req $ js-await
-                        js/fetch $ .-url (w-js-log props)
+                        js/fetch $ .-url props
                       code $ js-await (.!text req)
                     .set! *code $ parse-cirru code
               div
@@ -98,8 +108,8 @@
     |app.interpret $ {}
       :ns $ quote (ns app.interpret)
       :defs $ {}
-        |interpret-left $ quote
-          defn interpret-left (body scope)
+        |interpret-let $ quote
+          defn interpret-let (body scope)
             let
                 pair $ first body
               assert "\"a pair after &let" $ and (list? pair)
@@ -112,7 +122,7 @@
                   nil $ rest body
                   fn (ret xs)
                     if (empty? xs) ret $ recur
-                      interpret $ first ret s
+                      interpret (first xs) s
                       rest xs
         |interpret-do $ quote
           defn interpret-do (body scope)
@@ -133,7 +143,7 @@
                       fn (s ps pos)
                         if (empty? ps) s $ recur
                           assoc s (first ps) (nth call-params pos)
-                          rest defined-params
+                          rest ps
                           inc pos
                   apply-args (nil body)
                     fn (ret xs)
@@ -164,6 +174,7 @@
                 (.starts-with? code "\"|") (.!slice code 1)
                 (.starts-with? code "\":")
                   turn-keyword $ .!slice code 1
+                (contains? scope code) (get scope code)
                 true $ raise (str "\"Unknown code: " code)
               if (list? code)
                 if (empty? code) (raise "\"Unknown empty expression")
@@ -172,10 +183,11 @@
                     cond
                         = c0 "\"if"
                         interpret-if (rest code) scope
+                      (= c0 "\";") nil
                       (= c0 "\"do")
                         interpret-do (rest code) scope
                       (= c0 "\"&let")
-                        interpret-left (rest code) scope
+                        interpret-let (rest code) scope
                       (= c0 "\"fn")
                         interpret-fn (rest code) scope
                       (= c0 "\"{}")
