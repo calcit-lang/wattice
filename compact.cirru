@@ -19,24 +19,77 @@
                 store $ .-store props
               div
                 {} $ :style (merge ui/global ui/row)
-                wrap-comp comp-window $ &js-object
+                wrap-comp comp-window $ js-object ("\"url" "\"./demos/home.cirru")
+                  "\"onEvent" $ fn (kind obj) (js/console.log "\"ontainer event" kind obj)
+        |root-scope $ quote
+          def root-scope $ {}
+            "\"println" $ fn (& args)
+              println $ join-str args "\" "
+            "\"div" div
+            "\"span" span
+            "\"button" button
+            "\"assoc" assoc
+            "\"dissoc" dissoc
+            "\"conj" conj
+            "\"rest" rest
+            "\"get" get
+            "\"nth" nth
+            "\"&str:concat" &str:concat
+            "\"&list:concat" &list:concat
+            "\"map" map
+            "\"filter" filter
+            "\"&str:replace" &str:replace
+            "\"count" count
+            "\"&+" $ fn (x y) (+ x y)
+            "\"&-" $ fn (x y) (- x y)
+            "\"[]" []
+            "\"&{}" &{}
+            "\"and" $ fn (& args)
+              if (empty? args) true $ if
+                = 1 $ count args
+                first args
+                if (first args)
+                  recur & $ rest args
+                  , false
+            "\"or" $ fn (& args)
+              if (empty? args) false $ if
+                = 1 $ count args
+                first args
+                if (first args) (first args)
+                  recur & $ rest args
+            "\"window" $ fn (props)
+              wrap-comp comp-window $ js-object
+                "\"url" $ :url props
+                "\"style" $ :style props
+                "\"onEvent" $ :on-event props
         |comp-window $ quote
-          defn comp-window (props & children)
+          defn comp-window (props ? children)
             let
                 *code $ use-atom nil
+                *state $ use-atom nil
+                scope $ merge root-scope
+                  {}
+                    "\"state" $ .get *state
+                    "\"set-state!" $ fn (s) (.set! *state s)
+                    "\"call-parent!" $ .-onEvent props
               use-effect! ([])
                 fn () (hint-fn async)
                   let
-                      req $ js-await (js/fetch "\"./demos/home.cirru")
+                      req $ js-await
+                        js/fetch $ .-url props
                       code $ js-await (.!text req)
-                      result $ apply-args
-                        nil (parse-cirru code) ({})
-                        fn (ret xs scope)
-                          if (empty? xs) ret $ let
-                              p $ interpret (first xs) ({})
-                            recur (nth p 0) (rest xs) (nth p 1)
-                    js/console.log result
-              div ({}) "\"Window" $ str "\"Code:" (.get *code)
+                    .set! *code $ parse-cirru code
+              div
+                {} (:class-name "\"window")
+                  :style $ or (.-style props) ({})
+                let
+                    result $ apply-args
+                      nil $ .get *code
+                      fn (ret xs)
+                        if (empty? xs) ret $ let
+                            p $ interpret (first xs) scope
+                          recur p $ rest xs
+                  :ui result
     |app.schema $ {}
       :ns $ quote (ns app.schema)
       :defs $ {}
@@ -55,10 +108,98 @@
     |app.interpret $ {}
       :ns $ quote (ns app.interpret)
       :defs $ {}
+        |interpret-let $ quote
+          defn interpret-let (body scope)
+            let
+                pair $ first body
+              assert "\"a pair after &let" $ and (list? pair)
+                = 2 $ count pair
+                string? $ nth pair 0
+              let
+                  s $ assoc scope (nth pair 0)
+                    interpret (nth pair 1) scope
+                apply-args
+                  nil $ rest body
+                  fn (ret xs)
+                    if (empty? xs) ret $ recur
+                      interpret (first xs) s
+                      rest xs
+        |interpret-do $ quote
+          defn interpret-do (body scope)
+            apply-args (nil body)
+              fn (ret xs)
+                if (empty? xs) ret $ recur
+                  interpret (first xs) scope
+                  rest xs
+        |interpret-fn $ quote
+          defn interpret-fn (part-code scope)
+            let
+                defined-params $ first part-code
+                body $ rest part-code
+              assert "\"params format" $ and (list? defined-params) (every? defined-params string?)
+              fn (& call-params)
+                let
+                    inner-scope $ apply-args (scope defined-params 0)
+                      fn (s ps pos)
+                        if (empty? ps) s $ recur
+                          assoc s (first ps) (nth call-params pos)
+                          rest ps
+                          inc pos
+                  apply-args (nil body)
+                    fn (ret xs)
+                      if (empty? xs) ret $ recur
+                        interpret (first xs) inner-scope
+                        rest xs
+        |interpret-if $ quote
+          defn interpret-if (body scope)
+            assert "\"expected 2~3 nodes after if" $ or
+              = 2 $ count body
+              = 3 $ count body
+            if
+              interpret (nth body 0) scope
+              interpret (nth body 1) scope
+              interpret (nth body 2) scope
+        |re-number $ quote
+          def re-number $ new js/RegExp "\"^-?\\d+(\\.\\d+)?$"
         |interpret $ quote
           defn interpret (code scope)
-            println "\"TODO interpreting" $ format-to-lisp code
-            [] code scope
+            if (string? code)
+              cond
+                  = code "\"nil"
+                  , nil
+                (= code "\"true") true
+                (= code "\"false") false
+                (.!test re-number code) (js/parseFloat code)
+                (.starts-with? code "\"\"") (.!slice code 1)
+                (.starts-with? code "\"|") (.!slice code 1)
+                (.starts-with? code "\":")
+                  turn-keyword $ .!slice code 1
+                (contains? scope code) (get scope code)
+                true $ raise (str "\"Unknown code: " code)
+              if (list? code)
+                if (empty? code) (raise "\"Unknown empty expression")
+                  let
+                      c0 $ first code
+                    cond
+                        = c0 "\"if"
+                        interpret-if (rest code) scope
+                      (= c0 "\";") nil
+                      (= c0 "\"do")
+                        interpret-do (rest code) scope
+                      (= c0 "\"&let")
+                        interpret-let (rest code) scope
+                      (= c0 "\"fn")
+                        interpret-fn (rest code) scope
+                      (= c0 "\"{}")
+                        &{} & $ map
+                          concat ([]) & $ rest code
+                          fn (x) (interpret x scope)
+                      (contains? scope c0)
+                          get scope c0
+                          , & $ map (rest code)
+                            fn (c) (interpret c scope)
+                      true $ raise (str "\"Unknown syntax: " code)
+                raise $ str "\"Unknown expression: " code
     |app.main $ {}
       :ns $ quote
         ns app.main $ :require
