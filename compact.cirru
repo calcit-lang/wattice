@@ -62,6 +62,7 @@
                 "\"url" $ :url props
                 "\"style" $ :style props
                 "\"onEvent" $ :on-event props
+                "\"data" $ :data props
         |comp-window $ quote
           defn comp-window (props ? children)
             let
@@ -72,6 +73,7 @@
                     "\"state" $ .get *state
                     "\"set-state!" $ fn (s) (.set! *state s)
                     "\"call-parent!" $ .-onEvent props
+                    "\"data" $ .-data props
               use-effect! ([])
                 fn () (hint-fn async)
                   let

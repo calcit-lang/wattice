@@ -313,6 +313,19 @@
                                     :type :expr
                                     :at 1628064639560
                                     :by |rJG4IHzWf
+                                  |x $ {}
+                                    :data $ {}
+                                      |T $ {} (:text "|\"data") (:type :leaf) (:at 1628078436537) (:by |rJG4IHzWf)
+                                      |j $ {}
+                                        :data $ {}
+                                          |T $ {} (:text |:data) (:type :leaf) (:at 1628078437819) (:by |rJG4IHzWf)
+                                          |j $ {} (:text |props) (:type :leaf) (:at 1628078438469) (:by |rJG4IHzWf)
+                                        :type :expr
+                                        :at 1628078437238
+                                        :by |rJG4IHzWf
+                                    :type :expr
+                                    :at 1628078432677
+                                    :by |rJG4IHzWf
                                 :type :expr
                                 :at 1628064639560
                                 :by |rJG4IHzWf
@@ -672,6 +685,19 @@
                                         :by |rJG4IHzWf
                                     :type :expr
                                     :at 1628064505045
+                                    :by |rJG4IHzWf
+                                  |x $ {}
+                                    :data $ {}
+                                      |T $ {} (:text "|\"data") (:type :leaf) (:at 1628078496338) (:by |rJG4IHzWf)
+                                      |j $ {}
+                                        :data $ {}
+                                          |T $ {} (:text |.-data) (:type :leaf) (:at 1628078498236) (:by |rJG4IHzWf)
+                                          |j $ {} (:text |props) (:type :leaf) (:at 1628078498942) (:by |rJG4IHzWf)
+                                        :type :expr
+                                        :at 1628078496998
+                                        :by |rJG4IHzWf
+                                    :type :expr
+                                    :at 1628078494692
                                     :by |rJG4IHzWf
                                 :type :expr
                                 :at 1628064406649

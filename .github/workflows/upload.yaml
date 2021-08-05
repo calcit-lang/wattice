@@ -47,6 +47,9 @@ jobs:
         cr --emit-js --once
         && yarn && yarn vite build --base=./
 
+    - name: "copy demos"
+      run: cp -r demos dist/
+
     - name: Deploy to server
       id: deploy
       uses: Pendect/action-rsyncer@v1.1.0
